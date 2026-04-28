@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Plus, Trash2, Search, X, Package, Tag, UserPlus } from 'lucide-react';
+import Link from 'next/link';
 
-// Local Accessoire type and a lightweight stub for accessoireService to avoid missing module errors.
-// Replace or remove the stub when you add the real ../services/api implementation.
+// Type pour un accessoire
 type Accessoire = {
   id: number;
   nom: string;
@@ -11,32 +12,65 @@ type Accessoire = {
   prix: number;
 };
 
-const accessoireService = {
-  async getAll(): Promise<Accessoire[]> {
-    return [];
-  }
-};
-
-import { Plus, Trash2, Search, X, Package, Tag, CreditCard } from 'lucide-react';
-
 export default function Home() {
+  // État pour la liste des accessoires
   const [accessoires, setAccessoires] = useState<Accessoire[]>([
     { id: 1, nom: "Cage Itel", marque: "Itel", categorie: "Protection", prix: 20 },
     { id: 2, nom: "Écran Protection", marque: "Samsung", categorie: "Accessoire", prix: 35 },
   ]);
+
+  // États pour la recherche et la modal
   const [recherche, setRecherche] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ nom: '', marque: '', categorie: 'Accessoire', prix: 0 });
 
+  // État pour le formulaire (champs liés)
+  const [formData, setFormData] = useState({
+    nom: '',
+    marque: '',
+    categorie: 'Accessoire',
+    prix: ''
+  });
+
+  // Fonction pour ajouter un produit
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.nom || !formData.marque || !formData.prix) {
+      alert("Veuillez remplir tous les champs");
+      return;
+    }
+
+    const nouveauProduit: Accessoire = {
+      id: Date.now(), // Génère un ID unique basé sur le temps
+      nom: formData.nom,
+      marque: formData.marque,
+      categorie: formData.categorie,
+      prix: Number(formData.prix)
+    };
+
+    setAccessoires([...accessoires, nouveauProduit]);
+    setShowModal(false); // Fermer la modal
+    setFormData({ nom: '', marque: '', categorie: 'Accessoire', prix: '' }); // Reset formulaire
+  };
+
+  // Fonction pour supprimer un produit
+  const supprimerProduit = (id: number) => {
+    if(confirm("Voulez-vous vraiment supprimer cet article ?")) {
+      setAccessoires(accessoires.filter(item => item.id !== id));
+    }
+  };
+
+  // Filtrage en temps réel
   const itemsFiltrés = accessoires.filter(item => 
-    item.nom.toLowerCase().includes(recherche.toLowerCase())
+    item.nom.toLowerCase().includes(recherche.toLowerCase()) ||
+    item.marque.toLowerCase().includes(recherche.toLowerCase())
   );
 
   return (
     <div className="p-4 md:p-10 bg-slate-50 min-h-screen text-slate-800 font-sans">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header avec un look moderne */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
@@ -48,26 +82,34 @@ export default function Home() {
             <p className="text-slate-500 mt-1 ml-12">Gérez vos accessoires en temps réel</p>
           </div>
           
-          <button 
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-200 font-semibold"
-          >
-            <Plus size={20} /> Ajouter un produit
-          </button>
+          <div className="flex gap-3">
+            {/* Lien vers la page d'inscription que tu vas créer */}
+            <Link href="/register" className="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all font-semibold">
+              <UserPlus size={20} /> Inscription
+            </Link>
+
+            <button 
+              onClick={() => setShowModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-200 font-semibold"
+            >
+              <Plus size={20} /> Ajouter un produit
+            </button>
+          </div>
         </div>
 
-        {/* Barre de recherche stylisée */}
+        {/* Barre de recherche */}
         <div className="relative mb-8 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
           <input 
             type="text" 
             placeholder="Rechercher par nom ou marque..." 
             className="w-full pl-12 pr-4 py-4 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all text-lg"
+            value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
           />
         </div>
 
-        {/* Tableau avec cartes (Cards) pour un look "App" */}
+        {/* Tableau */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -97,7 +139,10 @@ export default function Home() {
                   </td>
                   <td className="p-5">
                     <div className="flex justify-center gap-2">
-                      <button className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => supprimerProduit(item.id)}
+                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                      >
                         <Trash2 size={20} />
                       </button>
                     </div>
@@ -115,29 +160,55 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Modal stylisée */}
+      {/* Modal d'ajout */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-100 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-100">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-slate-800">Nouveau Produit</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X size={20}/>
+              </button>
             </div>
             
-            <form className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-600 ml-1">Nom de l'accessoire</label>
-                <input type="text" placeholder="ex: Cage antichoc" className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input 
+                  type="text" 
+                  required
+                  placeholder="ex: Cage antichoc" 
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.nom}
+                  onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-600 ml-1">Marque</label>
-                <input type="text" placeholder="ex: Apple, Samsung..." className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                <input 
+                  type="text" 
+                  required
+                  placeholder="ex: Apple, Samsung..." 
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.marque}
+                  onChange={(e) => setFormData({...formData, marque: e.target.value})}
+                />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-600 ml-1 text-blue-500">Prix (DT)</label>
-                <input type="number" placeholder="0.00" className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold" />
+                <label className="text-sm font-semibold text-slate-600 ml-1">Prix (DT)</label>
+                <input 
+                  type="number" 
+                  required
+                  placeholder="0.00" 
+                  className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+                  value={formData.prix}
+                  onChange={(e) => setFormData({...formData, prix: e.target.value})}
+                />
               </div>
-              <button className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all mt-4">
+              <button 
+                type="submit"
+                className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all mt-4"
+              >
                 Enregistrer le produit
               </button>
             </form>
